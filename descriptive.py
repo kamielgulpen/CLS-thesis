@@ -1,3 +1,4 @@
+from importlib.metadata import distribution
 from matplotlib.colors import Normalize
 import pandas as pd
 import seaborn as sns
@@ -5,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
 # from inequalipy import *
+
 
 def count_values(df, name):
     '''
@@ -32,13 +34,11 @@ def mean_columns(df, name):
         mean_column.to_csv(f'Data/Descriptives/tab_{name}/mean_{column}.csv')
         print(mean_column)
 
-def diversity_links(df):
-    dfObj = pd.DataFrame(df, columns=['geslacht_src','lft_src','oplniv_src','etngrp_src', 'N'])
-    duplicateRowsDF = dfObj.drop_duplicates()
-    return duplicateRowsDF
 
 class Person_links:
-    
+    '''
+    Makes a class for group of persons
+    '''
     def __init__(self, df, gender, age, education, ethnicity):
         self.df = df
         self.gender = gender
@@ -47,7 +47,7 @@ class Person_links:
         self.ethnicity = ethnicity
         self.links = self.get_links()
 
-
+    # Gets the links of the group, if a field is None it will ignore the field
     def get_links(self):
 
         df = self.df
@@ -63,10 +63,11 @@ class Person_links:
             df = df[df['oplniv_src'] == self.education]
 
         if self.ethnicity != None:
-             df = df[df['etngrp_src'] == self.ethnicity]
+            df = df[df['etngrp_src'] == self.ethnicity]
         
         return df
-             
+
+    # Other link values         
     def sum_n(self):
         return sum(self.links['n'])
 
@@ -82,37 +83,49 @@ class Person_links:
     def age_links(self):    
         return list(self.links['lft_dst'])
     
-def make_plots(category, name, df):
-    person_links = Person_links(df, None,None,None,None)
-    # sns.barplot(data =person_links.links, x=category+'_src', y='fn', hue = category+'_dst', estimator=np.sum)
+def make_plots(category, name):
+    '''
+    Makes heatmaps of links between groups
+            
+    category: 'huishouden','werkschool',  'familie','buren'
+
+    name: 'etngrp','geslacht', 'oplniv', 'lft'
+    '''
+
+    # Import dataframes and initialize Index and columns
+    df = pd.read_csv(f"Data/tab_{name}.csv")   
+    df_n = pd.read_csv('Data/tab_n_(with oplniv).csv')
+
     Index= sorted([i for i in pd.unique(df[category+'_src'])])
     Cols = sorted([i for i in pd.unique(df[category+'_dst'])])
 
-    df_n = pd.read_csv('Data/tab_n_(with oplniv).csv')
-
-    print(name)
+    # Initialize values and normalized, which can be False or True
     values = []
     normalized = False
+
+    # Goes through columns and indexes
     for i in Index:
         value = []
         for c in Cols:
 
+            # Sums up the amount of connections 2 groups have
             x = (np.sum((df[(df[category+'_src'] == i) & (df[category+'_dst'] == c)]))['n'])
 
+            # If it is normalized 
             if normalized:
                 x_n = np.sum(df_n[df_n[category] == c]['n'])
                 value.append(x/x_n)
             else:
                 value.append(x)
             
-
+        # Append values to list
         values.append(value)
 
-    df[(df[category+'_src'] == i) & (df[category+'_dst'] == c)]['n']
-
+    
+    # Make df with values
     df = pd.DataFrame(values, index= Index, columns= Cols)
-
     print(df)
+
     df = (df.div(df.sum(axis=1), axis=0))
 
     
@@ -120,19 +133,30 @@ def make_plots(category, name, df):
     plt.xlabel(f'src_{category}')
     plt.ylabel(f'dst_{category}')
     plt.tight_layout()
+
+    plt.show()
+
     if normalized:
         plt.savefig(f'Figures/tab_{name}/Heatmap/hm_normalized_{category}.jpg')
     else:
         plt.savefig(f'Figures/tab_{name}/Heatmap/hm_{category}.jpg')
     plt.show()
-    # plt.clf()
 
-def get_statistics_homophily(category, name, df):
 
+def get_statistics_homophily(category, name):
+    '''
+    Looks at the amount of connections between groups, and computes a t-test
+            
+            
+    category: 'huishouden','werkschool',  'familie','buren'
+
+    name: 'etngrp','geslacht', 'oplniv', 'lft'
+
+
+    '''
+    df = pd.read_csv(f"Data/tab_{name}.csv")    
     Index= sorted([i for i in pd.unique(df[category+'_src'])])
     Cols = sorted([i for i in pd.unique(df[category+'_dst'])])
-
-    
 
     values = []
     for i in Index:
@@ -143,11 +167,6 @@ def get_statistics_homophily(category, name, df):
             y = df[(df[category+'_src'] == i) & (df[category+'_dst'] == c)]['n']
 
             t_test =  (stats.ttest_ind(x, y))
-            # print(t_test)
-
-
-            # print(np.mean(x), np.mean(y))
-            
             
             last_value = ((np.mean(x)), (np.mean(y)), (t_test[1]))
 
@@ -159,7 +178,17 @@ def get_statistics_homophily(category, name, df):
 
     df.to_csv(f'Data/Descriptives/tab_{name}/{category}_ttest_homophily.csv')
 
-def get_distributions_connections(category, name, df):
+
+def get_distributions_connections(category, name):
+    '''
+    Returns a plot with the distributions of a certain category
+    
+    category: 'huishouden','werkschool',  'familie','buren'
+
+    name: 'etngrp','geslacht', 'oplniv', 'lft'
+
+    '''
+    df = pd.read_csv(f"Data/tab_{name}.csv")    
     person_links = Person_links(df, None,None,None,None)
     # sns.barplot(data =person_links.links, x=category+'_src', y='fn', hue = category+'_dst', estimator=np.sum)
     category = 'lft'
@@ -168,6 +197,8 @@ def get_distributions_connections(category, name, df):
     
     Index2= sorted([i for i in pd.unique(df[category2+'_src'])])
     df_n = pd.read_csv('Data/tab_n_(with oplniv).csv')
+    
+
     new_df = pd.DataFrame()
     n_values = []
     age = []
@@ -189,14 +220,14 @@ def get_distributions_connections(category, name, df):
             df2 = df[df[category+'_src'] == i]
 
             df3 = df_n[df_n[category] == i]
-     
+    
 
             for j in Index:
                 print(sum(df3['n'])/sum(df2['n']))
 
                 x = sum(df3[df3[category2] == j]['n'])
 
-      
+    
                 n_value  = sum(df2[df2[category2+'_src'] == j]['n'])
                 # print(n_value,x)
                 new_value = round(n_value/x)
@@ -210,18 +241,19 @@ def get_distributions_connections(category, name, df):
     new_df['Age'] = age
     new_df['Ethnicity'] = etn
 
-    print(new_df)
-   
-    sns.histplot(data=new_df,  stat="count", multiple="stack",
-             x="Ethnicity", kde=False,
-             palette="pastel", hue="Age",
-             element="bars", legend=True)
+    # Specific plot
 
-    plt.xticks(rotation=90)
-    plt.tight_layout()
-    # plt.show() 
-    plt.savefig(f'Figures/tab_{name}/{category}Distribution_normalized_concat.jpg')
-    plt.show()
+    # sns.histplot(data=new_df,  stat="count", multiple="stack",
+    #         x="Ethnicity", kde=False,
+    #         palette="pastel", hue="Age",
+    #         element="bars", legend=True)
+
+    # plt.xticks(rotation=90)
+    # plt.tight_layout()
+    # # plt.show() 
+    # plt.savefig(f'Figures/tab_{name}/{category}Distribution_normalized_concat.jpg')
+    # plt.show()
+
     sns.histplot(data=new_df, y = 'Category')
 
     # plt.xticks(rotation=90)
@@ -230,28 +262,13 @@ def get_distributions_connections(category, name, df):
     # plt.show()
     plt.savefig(f'Figures/tab_{name}/{category}Distribution_normalized_concat1.jpg')
     plt.show()
-    exit()
     if normalized:
         plt.savefig(f'Figures/tab_{name}/{category}Distribution_normalized.jpg')
 
     else:
         plt.savefig(f'Figures/tab_{name}/{category}Distribution.jpg') 
     plt.close()
-       
-            
-
-
-def get_descriptive_homophily(name, df, plots=True):
     
-    for name in ['huishouden','werkschool',  'familie','buren']:
-        df = pd.read_csv(f"Data/tab_{name}.csv")    
-        for i in ['etngrp','geslacht', 'oplniv', 'lft']:
-            # make_plots(i, name, df)
-            # get_statistics_homophily(i,name, df)
-            get_distributions_connections(i,name, df)
-            # Inequaity(i,name,df)
-            if plots:
-                make_plots(i, name, df)
 
 def get_distributions_n():
     df = pd.read_csv('tab_n.csv')
@@ -276,42 +293,50 @@ def get_distributions_n():
         plt.savefig(f'Figures/tab_n/{column}.jpg')    # df.to_csv(f'Data/Descriptives/tab_{name}/{category}_ttest_homophily.csv')
         plt.close()
 
-
-    # exit()
-
-
-if __name__ == '__main__':
-    # Takes name of tab_ as input and reads csv
-    name = 'huishouden'
-    df = pd.read_csv(f"Data/tab_{name}.csv")
-
-    # Ask for exporting descriptive statistics
-    export_mean_columns = False
-    export_count_values = False
-    homophily_statistis = False
-    distributions_n = False
-
-    # Calling functions
-    if export_mean_columns:
-        mean_columns(df, name)
-
-    if export_count_values:
-        count_values(df, name)
-
-    if homophily_statistis:
-        get_descriptive_homophily(name, df, False)
-
-    if distributions_n:
-        get_distributions_n()    
     
-    
+        
+'''
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Runs the descriptive programme
+'''
+# Takes name of tab_ as input and reads csv
+name = 'huishouden'
+group = 'etngrp'
+df = pd.read_csv(f"Data/tab_{name}.csv")
 
 
-    Total = df['n'].sum()
+# Ask for exporting descriptive statistics
+export_mean_columns = False
+export_count_values = False
+homophily_statistis = True
+distributions_n = False
+distribution_connections = False
 
-    print(Total)
+# Calling functions
+if export_mean_columns:
+    mean_columns(df, name)
 
-    # person_links = Person_links(df, 'Man',None,None,None)
+if export_count_values:
+    count_values(df, name)
 
 
-    
+
+if distributions_n:
+    get_distributions_n()    
+
+if distribution_connections:
+    get_distributions_connections(name, group)
+
+# get distributions(name, i) can also be filled in or make_pot(name,i)
+if homophily_statistis:
+    for name in ['huishouden','werkschool',  'familie','buren']:
+        for i in ['etngrp','geslacht', 'oplniv', 'lft']:
+            #  get_statistics_homophily(name, i)
+
+            make_plots(i,name)
+
+
+
+
+
+
