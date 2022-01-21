@@ -1,4 +1,5 @@
 from importlib.metadata import distribution
+from unicodedata import category
 from matplotlib.colors import Normalize
 import pandas as pd
 import seaborn as sns
@@ -7,6 +8,13 @@ import numpy as np
 from scipy import stats
 # from inequalipy import *
 
+def get_total_edges(name):
+    df = pd.read_csv(f'Data/tab_{name}.csv')
+    return sum(df['n'])
+
+def get_total_nodes():
+    df = pd.read_csv('Data/tab_n_(with oplniv).csv')
+    return sum(df['n'])
 
 def count_values(df, name):
     '''
@@ -160,7 +168,6 @@ def get_statistics_homophily(category, name):
 
     values = []
     for i in Index:
-        empty_list = []
         value_l = []
         for c in Cols:
             x = df[(df[category+'_src'] == i) & (df[category+'_dst'] == i)]['n']
@@ -182,7 +189,7 @@ def get_statistics_homophily(category, name):
 def get_distributions_connections(category, name):
     '''
     Returns a plot with the distributions of a certain category
-    
+
     category: 'huishouden','werkschool',  'familie','buren'
 
     name: 'etngrp','geslacht', 'oplniv', 'lft'
@@ -223,18 +230,19 @@ def get_distributions_connections(category, name):
     
 
             for j in Index:
-                print(sum(df3['n'])/sum(df2['n']))
+                # print(sum(df3['n'])/sum(df2['n']))
 
                 x = sum(df3[df3[category2] == j]['n'])
 
+                if x:
     
-                n_value  = sum(df2[df2[category2+'_src'] == j]['n'])
-                # print(n_value,x)
-                new_value = round(n_value/x)
-                print(new_value)
-                n_values.extend([i + j] * new_value)
-                age.extend([i] * new_value)
-                etn.extend([j]*new_value)
+                    n_value  = sum(df2[df2[category2+'_src'] == j]['n'])
+
+                    new_value = round(n_value/x)
+
+                    n_values.extend([i + j] * new_value)
+                    age.extend([i] * new_value)
+                    etn.extend([j]*new_value)
 
         
     new_df['Category'] = n_values
@@ -243,16 +251,16 @@ def get_distributions_connections(category, name):
 
     # Specific plot
 
-    # sns.histplot(data=new_df,  stat="count", multiple="stack",
-    #         x="Ethnicity", kde=False,
-    #         palette="pastel", hue="Age",
-    #         element="bars", legend=True)
+    sns.histplot(data=new_df,  stat="count", multiple="stack",
+            x="Ethnicity", kde=False,
+            palette="pastel", hue="Age",
+            element="bars", legend=True)
 
-    # plt.xticks(rotation=90)
-    # plt.tight_layout()
-    # # plt.show() 
-    # plt.savefig(f'Figures/tab_{name}/{category}Distribution_normalized_concat.jpg')
-    # plt.show()
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    # plt.show() 
+    plt.savefig(f'Figures/tab_{name}/{category}Distribution_normalized_concat.jpg')
+    plt.show()
 
     sns.histplot(data=new_df, y = 'Category')
 
@@ -268,24 +276,23 @@ def get_distributions_connections(category, name):
     else:
         plt.savefig(f'Figures/tab_{name}/{category}Distribution.jpg') 
     plt.close()
-    
+
+
 
 def get_distributions_n():
+
     df = pd.read_csv('tab_n.csv')
 
-    total_nodes = sum(df['n'])
     for column in df.columns[0:-1]:
         new_df = pd.DataFrame()
-        # new_df['column'] = pd.unique(df[column])
+
         n_values = []
         for value in sorted(pd.unique(df[column])):
-            n_value = sum(df[df[column] == value]['n'])
-            
+            n_value = sum(df[df[column] == value]['n'])  
             n_values.extend([value] * n_value)
         
         new_df['Category'] = n_values
-        print(new_df)
-        # exit()
+
         sns.histplot(data = new_df ,x='Category')
         plt.tight_layout()
 
@@ -293,49 +300,94 @@ def get_distributions_n():
         plt.savefig(f'Figures/tab_n/{column}.jpg')    # df.to_csv(f'Data/Descriptives/tab_{name}/{category}_ttest_homophily.csv')
         plt.close()
 
-    
+
+def make_distributions_per_group(name):
+    '''
+    Makes a distribution of all 240 groups
+    '''
+
+    # Loads 
+    df = pd.read_csv(f"Data/tab_{name}.csv")   
+    df_n = pd.read_csv('Data/tab_n_(with oplniv).csv')
+    distribution_df = pd.DataFrame()
+
+    dst_values = []
+    for i in df.iterrows():
+        geslacht = i[1]['geslacht_dst']
+        lft = i[1]['lft_dst']
+        oplniv = (i[1]['oplniv_dst'])
+        etngrp = i[1]['etngrp_dst']
+        dst_group = f'{geslacht}, {lft}, {oplniv}, {etngrp}'
         
-'''
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Runs the descriptive programme
-'''
-# Takes name of tab_ as input and reads csv
-name = 'huishouden'
-group = 'etngrp'
-df = pd.read_csv(f"Data/tab_{name}.csv")
+
+        
+        value = df_n[(df_n['geslacht'] == geslacht) & (df_n['lft'] == lft) & (df_n['etngrp'] == etngrp)& (df_n['oplniv'] == oplniv)]
 
 
-# Ask for exporting descriptive statistics
-export_mean_columns = False
-export_count_values = False
-homophily_statistis = True
-distributions_n = False
-distribution_connections = False
-
-# Calling functions
-if export_mean_columns:
-    mean_columns(df, name)
-
-if export_count_values:
-    count_values(df, name)
+        
+        if sum(value['n']) != 0:
+            value = round(i[1]['n'])/value['n']
 
 
+            dst_values.extend([dst_group] * int(float(value) * 100))
 
-if distributions_n:
-    get_distributions_n()    
-
-if distribution_connections:
-    get_distributions_connections(name, group)
-
-# get distributions(name, i) can also be filled in or make_pot(name,i)
-if homophily_statistis:
-    for name in ['huishouden','werkschool',  'familie','buren']:
-        for i in ['etngrp','geslacht', 'oplniv', 'lft']:
-            #  get_statistics_homophily(name, i)
-
-            make_plots(i,name)
+        
+    distribution_df['destination'] = dst_values
 
 
+    plt.yticks(fontsize = 5)
+    plt.tight_layout()
+    sns.histplot(data = distribution_df, y='destination')
+    plt.show()
+
+        
+if __name__ == '__main__':
+    # Takes name of tab_ as input and reads csv
+    name = 'buren'
+    group = 'etngrp'
+    df = pd.read_csv(f"Data/tab_{name}.csv")
+
+
+    # Ask for exporting descriptive statistics
+    export_mean_columns = False
+    export_count_values = False
+    homophily_statistis = False
+    distributions_n = False
+    distribution_connections = False
+    total_distribution = True
+
+
+    # Calling functions
+    if export_mean_columns:
+        mean_columns(df, name)
+
+    if export_count_values:
+        count_values(df, name)
+
+
+
+    if distributions_n:
+        get_distributions_n()    
+
+    if distribution_connections:
+        get_distributions_connections(name, group)
+
+    # get distributions(name, i) can also be filled in or make_pot(name,i)
+    if homophily_statistis:
+        for name in ['huishouden','werkschool',  'familie','buren']:
+            for i in ['etngrp','geslacht', 'oplniv', 'lft']:
+                #  get_statistics_homophily(name, i)
+                get_distributions_connections(i, name)
+
+                # make_plots(i,name)
+    
+    if total_distribution:
+        make_distributions_per_group(name)
+
+    # edges = get_total_edges(name)
+    # # nodes = get_total_nodes()
+
+    # print(edges)
 
 
 

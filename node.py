@@ -20,4 +20,4 @@ class Node:
         
 
     def __str__(self):
-        return f'{self.id}, {self.age}, {self.etnicity}, {self.education}'
+        return f'{self.gender} {self.age}, {self.etnicity}, {self.education}'
