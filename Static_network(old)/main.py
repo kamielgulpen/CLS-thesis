@@ -115,7 +115,7 @@ def initialize_edges_probability(df_edges, all_nodes, group_nodes, source = None
     
 
 
-def initialize_edges_links(df_edges, all_nodes, layer ,group_nodes, division, id_source = None, id_destination = None, source = None, destination = None, barabasi = False):     
+def initialize_edges_links(df_edges, all_nodes, layer ,group_nodes, division, id_source = None, id_destination = None, source = None, destination = None, barabasi = False, percentage=1):     
     '''
     Initializes the links based on the links per group instead of the probability
     '''     
@@ -209,6 +209,7 @@ def initialize_edges_links(df_edges, all_nodes, layer ,group_nodes, division, id
                     src_node = np.random.choice(group_nodes[src_group])
                     dst_node = np.random.choice(group_nodes[dst_group])
                 else:
+                    
                     break
 
 
@@ -237,17 +238,17 @@ def initialize_edges_links(df_edges, all_nodes, layer ,group_nodes, division, id
                         
                         symetry_dict[(src_group, dst_group)] += 1
 
-                    # Appends both nodes to lists
-                    source.append(str(src_node))
-                    destination.append(str(dst_node))
-                
-                    id_source.append(src_node.id)
-                    id_destination.append(dst_node.id)
+                # Appends both nodes to lists
+                source.append(str(src_node))
+                destination.append(str(dst_node))
+            
+                id_source.append(src_node.id)
+                id_destination.append(dst_node.id)
 
-                    src_node.links.append(dst_node)
+                src_node.links.append(dst_node)
 
-                        
-                    break
+                    
+                break
             
             
     return source, destination, id_source, id_destination
@@ -277,7 +278,7 @@ if __name__ == '__main__':
         
     
         df_edges = pd.read_csv(f'Data/tab_{layer}.csv')
-        source, destination, source_id, destination_id = initialize_edges_links(df_edges, all_nodes, layer ,group_nodes, division, id_source = None, id_destination = None, source = None, destination = None, barabasi = 1)
+        source, destination, source_id, destination_id = initialize_edges_links(df_edges, all_nodes, layer ,group_nodes, division, id_source = None, id_destination = None, source = None, destination = None, barabasi = 1, percentage = 1)
 
         
 
