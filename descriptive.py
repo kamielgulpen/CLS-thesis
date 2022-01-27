@@ -343,7 +343,7 @@ def make_distributions_per_group(name):
         
 if __name__ == '__main__':
     # Takes name of tab_ as input and reads csv
-    name = 'buren'
+    name = 'werkschool'
     group = 'etngrp'
     df = pd.read_csv(f"Data/tab_{name}.csv")
 
@@ -354,7 +354,7 @@ if __name__ == '__main__':
     homophily_statistis = False
     distributions_n = False
     distribution_connections = False
-    total_distribution = True
+    total_distribution = False
 
 
     # Calling functions
@@ -384,10 +384,10 @@ if __name__ == '__main__':
     if total_distribution:
         make_distributions_per_group(name)
 
-    # edges = get_total_edges(name)
-    # # nodes = get_total_nodes()
+    edges = get_total_edges(name)
+    nodes = get_total_nodes()
 
-    # print(edges)
+    print(nodes)
 
 
 
