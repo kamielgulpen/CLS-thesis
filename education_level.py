@@ -1,9 +1,9 @@
 import pandas as pd
 from pandas.core import frame
 from seaborn.palettes import dark_palette
-
+import math
 from descriptive import Person_links
-
+import random
 
 
 def get_fraction_df():
@@ -130,36 +130,50 @@ def get_total_fraction():
 
 
 
-def finish()
-    new_df = pd.DataFrame()
+def finish():
+    '''
+    Makes final dataframe which is the 
+    '''
+
+    # Import dataframes
     df = pd.read_csv('n_per_group2.csv')
     df_n = pd.read_csv('Data/tab_n.csv')
 
+    # initialize lists and dataframe
     geslacht = []
     lft = []
     etngrp = []
     education = []
     n = []
+    new_df = pd.DataFrame()
+
+    # Loops through all groups
     for geslacht_, lft_, etngrp_ in zip(df_n['geslacht'], df_n['lft'], df_n['etngrp']):
+
+        # Loops through all education levels
         for i in range(1,4): 
             education.append(i)
             geslacht.append(geslacht_)
             lft.append(lft_)
             etngrp.append(etngrp_)
 
+            # Gets dataframe of certain group
             df_x = df_n[df_n['geslacht'] == geslacht_]
             df_x = df_x[df_x['lft'] == lft_]
             df_x = df_x[df_x['etngrp'] == etngrp_]
 
+            # Gets the n value of the particular group
             n_ = df_x['n']
 
+            # Gets the row of category which result in a three rowed data frame with education label i
             df_f = df[df['Category'] == f'{geslacht_, lft_, etngrp_}']
             df_f = df_f[df_f['Education_level'] == i]
 
+            # Take the fraction that group
             fraction = df_f['Fraction']
 
-
-            n.append(int(int(n_) * float(fraction)))
+            # Make new n value per education level based on fraction and total n
+            n.append(math.ceil(math.ceil(n_) * float(fraction)))
 
     new_df['geslacht'] = geslacht
     new_df['lft'] = lft
@@ -167,3 +181,22 @@ def finish()
     new_df['education'] = education   
     new_df['n'] = n   
     new_df.to_csv('tab_n.csv')
+
+tab_n = pd.read_csv('Data/tab_n.csv')
+n_tab_n = pd.read_csv('tab_n.csv')
+
+n = list(n_tab_n['n'])
+
+print(n)
+
+for i in range(int(sum(tab_n['n'])) - int(sum(n_tab_n['n']))):
+    r = random.randint(0,len(n)-1)
+    n[r] += 1
+
+
+n_tab_n['n'] = n
+
+n_tab_n.to_csv('tab_n.csv')
+# get_fraction_df()
+# get_total_fraction()
+# finish()

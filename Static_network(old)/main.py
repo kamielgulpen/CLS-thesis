@@ -200,7 +200,7 @@ def initialize_edges_links(df_edges, all_nodes, layer ,group_nodes, division, id
             nodes_p = dict(nodes_p)
 
         
-        for _ in range(connections):
+        while i < connections:
             
             while True:
                 
