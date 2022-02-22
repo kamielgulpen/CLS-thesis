@@ -16,6 +16,16 @@ def get_total_nodes():
     df = pd.read_csv('Data/tab_n_(with oplniv).csv')
     return sum(df['n'])
 
+def get_groups():
+    df_n = pd.read_csv('Data/tab_n_(with oplniv).csv')
+
+    gender = df_n['geslacht'].unique()
+    age = df_n['lft'].unique()
+    etn = df_n['etngrp'].unique()
+    edu = df_n['oplniv'].unique()
+
+    return gender, age, etn, edu
+
 def count_values(df, name):
     '''
     Counting the values in the dataframe and export it to a csv file
@@ -310,8 +320,13 @@ def make_distributions_per_group(name):
     df = pd.read_csv(f"Data/tab_{name}.csv")   
     df_n = pd.read_csv('Data/tab_n_(with oplniv).csv')
     distribution_df = pd.DataFrame()
+    values_df = pd.DataFrame()
+
+
 
     dst_values = []
+    d_values = []
+    values = []
     for i in df.iterrows():
         geslacht = i[1]['geslacht_dst']
         lft = i[1]['lft_dst']
@@ -325,22 +340,31 @@ def make_distributions_per_group(name):
 
 
         
+        
         if sum(value['n']) != 0:
             value = round(i[1]['n'])/value['n']
-
-
+            values.append(value)
+            # print(value)
+            d_values.append(dst_group)
             dst_values.extend([dst_group] * int(float(value) * 100))
 
         
     distribution_df['destination'] = dst_values
+    values_df['destination'] = d_values
+    values_df['values'] = values
 
+    values_df = values_df.groupby(by='destination').sum().reset_index()
+    # plt.yticks(fontsize = 5)
+    # plt.tight_layout()
+    print(values_df)
 
-    plt.yticks(fontsize = 5)
-    plt.tight_layout()
-    sns.histplot(data = distribution_df, y='destination')
-    plt.show()
+    # sns.barplot(data = values_df, x='destination', y='values')
 
-        
+    # plt.show()
+    values_df.to_csv('values_df.csv')
+def normalized_links(df):
+    gender, age, etn, edu = get_groups()
+
 if __name__ == '__main__':
     # Takes name of tab_ as input and reads csv
     name = 'huishouden'
@@ -354,7 +378,8 @@ if __name__ == '__main__':
     homophily_statistis = False
     distributions_n = False
     distribution_connections = False
-    total_distribution = False
+    total_distribution = True
+
 
 
     # Calling functions
@@ -384,10 +409,11 @@ if __name__ == '__main__':
     if total_distribution:
         make_distributions_per_group(name)
 
-    edges = get_total_edges(name)
-    nodes = get_total_nodes()
+    
+    # edges = get_total_edges(name)
+    # nodes = get_total_nodes()
 
-    print(edges)
+    # print(edges/nodes)
 
 
 
