@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import timeit
 
 df_household = pd.read_csv('./Data/NW_data2/huishouden_nw_barabasi=0_reciprocity_0_.csv')
 df_family =  pd.read_csv('./Data/NW_data2/familie_nw_barabasi=0_reciprocity_0_.csv')
@@ -10,21 +11,111 @@ undirected_family = df_family.iloc[::2]
 source_groups = undirected_house_hold['source_group'].unique()
 destination_groups = undirected_house_hold['destination_group'].unique()
 
-print(len(source_groups), len(destination_groups))
+# print(len(source_groups), len(destination_groups))
 
 mx_h = undirected_house_hold.to_numpy()
 mx_f = undirected_family.to_numpy()
 
-print(mx_h, mx_f)
-count = 0
+mx_h = mx_h[np.lexsort((mx_h[:,-2],mx_h[:,-1]))]
+mx_f = mx_f[np.lexsort((mx_f[:,-2],mx_f[:,-1]))]
 
 
-# for i in source_groups:
-#     count +=1
-#     print(count)
-#     for j in destination_groups:
+
+household_dualarray = np.column_stack((mx_h[:,-2], mx_h[:,-1]))
+family_dualarray = np.column_stack((mx_f[:,-2], mx_f[:,-1]))
+
+household_dualarray = household_dualarray[np.lexsort((household_dualarray[:,1],household_dualarray[:,0]))]
+family_dualarray = family_dualarray[np.lexsort((family_dualarray[:,1],family_dualarray[:,0]))]
+
+
+unique_rows_h = np.unique(household_dualarray, axis=0, return_index=True)
+unique_rows_f = np.unique(family_dualarray, axis=0, return_index=True)
+
+f_connections, f_indices = unique_rows_f
+h_connections, h_indices = unique_rows_h
+
+
+f_indices = np.append(f_indices, mx_f.shape[0])
+h_indices = np.append(h_indices, mx_h.shape[0])
+
+i = 0
+j = 0
+
+same = 0
+mx_h = np.delete(mx_h, 0, 1)  # delete second column of C
+mx_f = np.delete(mx_f, 0, 1)  # delete second column of C
+
+while i < len(h_connections):
+
+        index = np.where(np.all(f_connections==h_connections[i],axis=1))[0]
+
+        if len(index) < 1:
+                i += 1
+                continue
         
-#         rows = mx[mx[:,3] == i]
-        # undirected_house_hold[(undirected_house_hold['source_group'] == i) &
-        #                         undirected_house_hold['destination_group'] == j]
+        index = index[0]
+        # Look where connecitons are the same in both matrices
+        
+        
+        # Look at the indices in the whole matrices these have
+        
+        # Get range of family and household
+        # Look at the total amount of connections of the value
+        range_f = f_indices[index + 1] - f_indices[index]
+        range_h = h_indices[i + 1] - h_indices[i]
 
+        # Replace a x percent of the values in the household dataset with the values in the Family dataset
+        first_f = f_indices[index]
+        first_h = h_indices[i]
+        if range_h > range_f:
+                second = int(range_f * 1)
+                
+        else:
+                second = int(range_h * 1)
+        
+        old_values = mx_h[first_h: first_h + second]
+        # print(mx_h[first_h: first_h + second])
+        mx_h[first_h: first_h + second] = mx_f[first_f: first_f + second ]
+        
+
+        same += second
+        # print(mx_h[first_h: first_h + second])
+  
+    
+        x = np.unique(mx_h[first_h: h_indices[i+1]], axis=0)
+        
+        while len(x) != len(mx_h[first_h: h_indices[i+1]]):
+
+                difference = abs(len(x) - len(mx_h[first_h: h_indices[i+1]]))
+
+                number_of_rows = old_values.shape[0]
+               
+                random_indices = np.random.choice(number_of_rows, size=difference, replace=False)
+                random_rows = old_values[random_indices, :]
+
+                # print(random_indices)
+                x = np.vstack((random_rows, x))
+
+                print(x)
+                print(mx_h[first_h: h_indices[i+1]])
+
+        
+
+
+        mx_h[first_h: h_indices[i+1]] = x
+        i += 1 
+
+copy = mx_h.copy()
+
+copy[:, [-1, -2]] = copy[:, [-2, -1]]
+
+mx_h =  np.vstack((copy, mx_h))
+
+df = pd.DataFrame(mx_h)
+
+df.columns = ['source_id','destination_id','source_group','destination_group']
+
+df = df[df.duplicated(subset=['source_id','destination_id'], keep=False)]
+print (df)
+
+df.to_csv('overlap.csv', index=False)

@@ -3,7 +3,7 @@ Constructing digital twin of Amsterdam social network
 
 This project shows the progress of the construction of the digital twin of Amsterdam.
 
-
+***
 ## Folder description
 
 `Data` the Data folder is a folder which consists of the CBS Data and several folders.
@@ -23,7 +23,7 @@ This project shows the progress of the construction of the digital twin of Amste
 `Papers` The Paper folder includes relevant books and papers for particular subjects.
 
 `Presentations` Are the weekly presentations.
-
+***
 
 ## Script descriptions
 
