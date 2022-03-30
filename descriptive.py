@@ -142,17 +142,19 @@ def make_plots(category, name):
     
     # Make df with values
     df = pd.DataFrame(values, index= Index, columns= Cols)
-    print(df)
+    
 
     df = (df.div(df.sum(axis=1), axis=0))
 
-    
+    print(df)
+
+
     sns.heatmap(df.T, annot=True, fmt='.2f', cmap="Blues", cbar=True)
     plt.xlabel(f'src_{category}')
     plt.ylabel(f'dst_{category}')
     plt.tight_layout()
 
-    plt.show()
+    # plt.show()
 
     if normalized:
         plt.savefig(f'Figures/tab_{name}/Heatmap/hm_normalized_{category}.jpg')
@@ -270,7 +272,7 @@ def get_distributions_connections(category, name):
     plt.tight_layout()
     # plt.show() 
     plt.savefig(f'Figures/tab_{name}/{category}Distribution_normalized_concat.jpg')
-    plt.show()
+    # plt.show()
 
     sns.histplot(data=new_df, y = 'Category')
 
@@ -279,7 +281,7 @@ def get_distributions_connections(category, name):
     plt.tight_layout()
     # plt.show()
     plt.savefig(f'Figures/tab_{name}/{category}Distribution_normalized_concat1.jpg')
-    plt.show()
+    # plt.show()
     if normalized:
         plt.savefig(f'Figures/tab_{name}/{category}Distribution_normalized.jpg')
 
@@ -310,7 +312,8 @@ def get_distributions_n():
         plt.savefig(f'Figures/tab_n/{column}.jpg')    # df.to_csv(f'Data/Descriptives/tab_{name}/{category}_ttest_homophily.csv')
         plt.close()
 
-
+def reject_outliers(data, m=2):
+    return data[abs(data - np.mean(data)) < m * np.std(data)]
 def make_distributions_per_group(name):
     '''
     Makes a distribution of all 240 groups
@@ -322,46 +325,69 @@ def make_distributions_per_group(name):
     distribution_df = pd.DataFrame()
     values_df = pd.DataFrame()
 
+    values = {}
 
+    groups = []
+    size_household = []
+    for i in df.itertuples():
+        values[i[1], i[2], i[3], i[4]] = 0
 
-    dst_values = []
-    d_values = []
-    values = []
-    for i in df.iterrows():
-        geslacht = i[1]['geslacht_dst']
-        lft = i[1]['lft_dst']
-        oplniv = (i[1]['oplniv_dst'])
-        etngrp = i[1]['etngrp_dst']
-        dst_group = f'{geslacht}, {lft}, {oplniv}, {etngrp}'
+    for i in values:
+        print(i)
+        value_n = df_n[(df_n['geslacht'] == i[0]) & (df_n['lft'] == i[1]) & (df_n['etngrp'] == i[3])& (df_n['oplniv'] == i[2])]
+        
+        value_c = df[(df['geslacht_dst'] == i[0]) & (df['lft_dst'] == i[1]) & (df['etngrp_dst'] == i[3])& (df['oplniv_dst'] == i[2])]
+
+        size_household.append(value_c['n'].sum()/ value_n['n'].sum())
+        groups.append(str(i))
+
+    size_household = np.array(size_household)[np.array(size_household) < 9]
+
+    print(np.mean(size_household))
+
+    plt.hist(size_household, bins = 8)
+
+    plt.show()
+    # exit()
+    # dst_values = []
+    # d_values = []
+    # values = []
+
+    # for i in df.iterrows():
+    #     geslacht = i[1]['geslacht_dst']
+    #     lft = i[1]['lft_dst']
+    #     oplniv = (i[1]['oplniv_dst'])
+    #     etngrp = i[1]['etngrp_dst']
+    #     dst_group = f'{geslacht}, {lft}, {oplniv}, {etngrp}'
         
 
         
-        value = df_n[(df_n['geslacht'] == geslacht) & (df_n['lft'] == lft) & (df_n['etngrp'] == etngrp)& (df_n['oplniv'] == oplniv)]
+    #     value = df_n[(df_n['geslacht'] == geslacht) & (df_n['lft'] == lft) & (df_n['etngrp'] == etngrp)& (df_n['oplniv'] == oplniv)]
 
 
         
         
-        if sum(value['n']) != 0:
-            value = round(i[1]['n'])/value['n']
-            values.append(value)
-            # print(value)
-            d_values.append(dst_group)
-            dst_values.extend([dst_group] * int(float(value) * 100))
+    #     if sum(value['n']) != 0:
+    #         value = round(i[1]['n'])/value['n']
+    #         values.append(value)
+    #         # print(value)
+    #         d_values.append(dst_group)
+    #         dst_values.extend([dst_group] * int(float(value) * 100))
 
         
-    distribution_df['destination'] = dst_values
-    values_df['destination'] = d_values
-    values_df['values'] = values
+    # distribution_df['destination'] = dst_values
+    # values_df['destination'] = d_values
+    # values_df['values'] = values
 
-    values_df = values_df.groupby(by='destination').sum().reset_index()
-    # plt.yticks(fontsize = 5)
-    # plt.tight_layout()
-    print(values_df)
+    # values_df = values_df.groupby(by='destination').sum().reset_index()
+    # # plt.yticks(fontsize = 5)
+    # # plt.tight_layout()
+    # print(values_df)
 
     # sns.barplot(data = values_df, x='destination', y='values')
 
     # plt.show()
-    values_df.to_csv('values_df.csv')
+    # values_df.to_csv('values_df.csv')
 def normalized_links(df):
     gender, age, etn, edu = get_groups()
 
@@ -375,10 +401,10 @@ if __name__ == '__main__':
     # Ask for exporting descriptive statistics
     export_mean_columns = False
     export_count_values = False
-    homophily_statistis = False
+    homophily_statistis = True
     distributions_n = False
     distribution_connections = False
-    total_distribution = True
+    total_distribution = False
 
 
 
@@ -402,9 +428,9 @@ if __name__ == '__main__':
         for name in ['huishouden','werkschool',  'familie','buren']:
             for i in ['etngrp','geslacht', 'oplniv', 'lft']:
                 #  get_statistics_homophily(name, i)
-                get_distributions_connections(i, name)
+                # get_distributions_connections(i, name)
 
-                # make_plots(i,name)
+                make_plots(i,name)
     
     if total_distribution:
         make_distributions_per_group(name)
