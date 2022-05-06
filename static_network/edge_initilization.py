@@ -85,12 +85,11 @@ def initialize_edges_links(df_edges,all_nodes, layer ,group_nodes, hash_dict, ar
         dst_group = row[1]
         connections = row[2]
 
-        # if src_group == 181:
-       
+ 
 
         # If te data is symetric (familie, household), initiate a dictionary for the destination group
 
-        # print(connections)
+        
         if reciprocity and (src_group, dst_group) in symetry_dict:
     
             connections = connections - symetry_dict[(src_group, dst_group)]
@@ -145,7 +144,8 @@ def initialize_edges_links(df_edges,all_nodes, layer ,group_nodes, hash_dict, ar
                                 area += 1
                             else :
                                 area -= 1
-                            area %= 21
+                                
+                            area %= 99
 
                         # Get nodes based on area source group and destination group
                         dst_area_nodes = area_dict[area][dst_group]

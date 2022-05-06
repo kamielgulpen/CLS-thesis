@@ -61,9 +61,7 @@ def spatial(group_dict, group_nodes):
     group_list = df_sp.groupby(['geslacht','etngrp', 'oplniv']).size().reset_index().to_numpy()[:, [0, 1, 2]]
     area_list = df_sp['code'].unique()
     
-    print(area_list)
 
-    print(group_list)
     
     
     groups = list(group_nodes.keys())
@@ -115,7 +113,7 @@ def spatial(group_dict, group_nodes):
                 x = False
                 a += 1
                 
-                print(a)
+       
                 
 #             print(len(group_dict[group]), i, group)
             # node is i_th node of the list
@@ -168,6 +166,7 @@ def initialize_nodes(df, hash_dict):
     # Initialize list with nodes and nodes per group (example: Man,"[0,20)",1,Autochtoon)
     all_nodes = []
     group_nodes = {}
+    nodes_group = {}
     df_sp = pd.read_csv('Data\Spatial_data\spatial_data_wijken.csv')
     
     print(df_sp)
@@ -202,8 +201,10 @@ def initialize_nodes(df, hash_dict):
             nodes.append(node[0])
             all_nodes.append(id)
             group_dict[tuple([gender, etnc, education])].append(node)
+            nodes_group[id] = hd
 
             id += 1
+
             
    
                 
@@ -212,5 +213,5 @@ def initialize_nodes(df, hash_dict):
         group_nodes[hd] = nodes
 
 
-    return all_nodes, group_nodes, group_dict
+    return all_nodes, group_nodes, group_dict, nodes_group
 
