@@ -7,6 +7,7 @@ import networkx as nx
 import random
 from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
+from torch import int64
 from agent import Citizen
 import pandas as pd
 import itertools
@@ -51,7 +52,6 @@ class Amsterdam_social_network(Model):
         self.deaths = 0
         self.births = 0
         
-
         self.schedule = RandomActivation(self)
         model_reporters={
             "agent_count": lambda m: self.get_agent_count(m), 
@@ -62,6 +62,7 @@ class Amsterdam_social_network(Model):
             "work/school": lambda m : self.get_network(m.workschool_network),
             "neighbour": lambda m : self.get_network(m.neighbour_network),
             }
+
         agent_reporters={
             "age": lambda a: a.age,
             "age_group": lambda a: a.age_group,
@@ -84,8 +85,6 @@ class Amsterdam_social_network(Model):
         
         self.child_probabilities = self.child_probability()
         self.layer_probability_dict = self.get_probability_dictionary()
-
-
       
         for agent in agents:
             
@@ -96,7 +95,6 @@ class Amsterdam_social_network(Model):
             # For small model
             if dummy:
                 group_number = random.randint(0,239)
-           
                 group = rehash_dict[group_number]
 
             
@@ -106,7 +104,7 @@ class Amsterdam_social_network(Model):
                 group,
                 )
             
-            self.groups[group_number].add(citizen)
+            
             self.schedule.add(citizen)
 
             self.max_id += 1
@@ -125,21 +123,22 @@ class Amsterdam_social_network(Model):
         
         # self.get_group_distribution()
         self.schedule.step()
-
         
-
         self.iteration += 1
-       
+    
+
     def make_group_dict(self):
         '''
         Initializes a dictionary with all the groups 
 
         :returns: dict -- keys: int - group number, values: set - empty set
         '''
+
         group_dictionary = {}
-        for i in range(240):
+        for i in range(2400):
             group_dictionary[i] = set()
         
+    
         return group_dictionary
 
     def age_distibution_per_age(self):
@@ -169,8 +168,6 @@ class Amsterdam_social_network(Model):
             fractions_women = df['fractie_Vrouwen'].tolist()
 
             ages = df['Leeftijd'].tolist()
-
-            print(ages_groups[i], ages)
             age_frames[ages_groups[i]] = ({'Age' :ages , 'Man': fractions_men, 'Vrouw': fractions_women})
 
         
@@ -250,27 +247,32 @@ class Amsterdam_social_network(Model):
 
         distances = []
 
-        print(distances)
-
-      
+        ethn_dist = []
+           
         count = 0
         for i in range(2):
             for j in range(80):
                 for k in range(3):
                     for l in np.identity(5):
                         distance[count] = [i,j,k]
+                        ethn_dist.append(l)
                         distance[count].extend(l)
                         distance[count] = np.array(distance[count])
-                        
-                        distances.append(l)
+
+                        distances.append(tuple(distance[count]))
                         self.coordinates_character[tuple(distance[count])] = count
                         count += 1
 
+        combinations = np.array(list(itertools.product(distances, distances)))
+        combinations_ethn = np.array(list(itertools.product(ethn_dist, ethn_dist)))
+        
+        distances = np.absolute(combinations[:,1] - combinations[:,0])
+        ethn_dist =  np.array(np.absolute((combinations_ethn[:,1] - combinations_ethn[:,0])).any(axis=1), dtype=int).reshape((5760000,1))
+        
 
-        distances = np.array(distances)
-        exit()
+        distances = np.hstack((distances, ethn_dist))
 
-        return distance
+        return distances
 
     def get_distance(self, coordinates_agent_1, coordinates_agent_2, weights = False, distance_type='Euclidian'):
         '''
@@ -285,12 +287,10 @@ class Amsterdam_social_network(Model):
 
         :returns: float or list -- distance between two nodes
         '''
-
+        
         # Create two numpy arrays from the coordinates
         # a and b reprecent a list of the coordiantes of two agents
 
-
-     
         if distance_type == 'Manhattan':
             distance = [0]*4
 
@@ -358,9 +358,11 @@ class Amsterdam_social_network(Model):
         if weights == False:
             p_ij = ( a+ (beta *d_ij)) * np.exp(- alpha * d_ij)
         else : 
-            d_ijg, d_ija, d_ijo, d_ije = d_ij 
-
-            p_ij = ( a+ (beta * (X1 * d_ije  + X3 * d_ijg + X2 * d_ija + X4* d_ijo))) * np.exp(- alpha * (X1 * d_ije  + X3 * d_ijg + X2 * d_ija + X4* d_ijo))
+            
+            d_ijg = d_ij[:,0]
+            d_ija = d_ij[:,1]/(80/7)
+            d_ijo = d_ij[:,2] 
+            d_ije = d_ij[:,3] 
 
             p_ij = ( a+ (beta * (X1 * d_ije  + X3 * d_ijg + X2 * d_ija + X4* d_ijo))) * np.exp(- alpha * (X1 * d_ije  + X3 * d_ijg + X2 * d_ija + X4 * d_ijo))
 
@@ -439,12 +441,12 @@ class Amsterdam_social_network(Model):
         
 
         for layer in ['huishouden', 'familie', 'buren', 'werkschool']:
-            probability_dict = {}
-            for i in range(240):
-                
-                for j in range(240):
-                    probability_dict[(i,j)] = self.get_connection_probability(self.get_distance(i,j),layer)
-            layer_probability_dict[layer] = probability_dict
+         
+            p_ij = self.get_connection_probability(self.coordinates_dict, layer)
+
+            layer_probability_dict[layer] = p_ij.reshape((2400,2400))
+            #         probability_dict[(i,j)] = self.get_distance(i,j)
+            # layer_probability_dict[layer] = probability_dict
 
         return layer_probability_dict
        
