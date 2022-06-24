@@ -48,33 +48,33 @@ all_nodes, group_nodes, etn_dict, nodes_group = node_initialization.initialize_n
 
 # '''
 
-df1 = pd.read_csv('./Data/NW_data/overlap.csv')
-df2 = pd.read_csv('./Data/NW_data/hh_test.csv')
-df3 = pd.read_csv('./Data/NW_data/buren_test.csv')
-df4 = pd.read_csv('./Data/NW_data/werkschool_test.csv')
+# df1 = pd.read_csv('./Data/NW_data/overlap.csv')
+# df2 = pd.read_csv('./Data/NW_data/hh_test.csv')
+# df3 = pd.read_csv('./Data/NW_data/buren_test.csv')
+# df4 = pd.read_csv('./Data/NW_data/werkschool_test.csv')
 
-print('''
--------------------------------------------------------------- 
-Data is imported
--------------------------------------------------------------- 
- ''')
-family_network  = nx.from_pandas_edgelist(df1, 'source_id', 'destination_id' ,create_using=nx.DiGraph())
-household_network  = nx.from_pandas_edgelist(df1, 'source_id', 'destination_id' ,create_using=nx.DiGraph())
-neighbour_network =  nx.from_pandas_edgelist(df1, 'source_id', 'destination_id' ,create_using=nx.DiGraph())
-workschool_network = nx.from_pandas_edgelist(df1, 'source_id', 'destination_id' ,create_using=nx.DiGraph())
-dummy = False
-print('''
--------------------------------------------------------------- 
-Networks are made
---------------------------------------------------------------
-''')
+# print('''
+# -------------------------------------------------------------- 
+# Data is imported
+# -------------------------------------------------------------- 
+#  ''')
+# family_network  = nx.from_pandas_edgelist(df1, 'source_id', 'destination_id' ,create_using=nx.DiGraph())
+# household_network  = nx.from_pandas_edgelist(df1, 'source_id', 'destination_id' ,create_using=nx.DiGraph())
+# neighbour_network =  nx.from_pandas_edgelist(df1, 'source_id', 'destination_id' ,create_using=nx.DiGraph())
+# workschool_network = nx.from_pandas_edgelist(df1, 'source_id', 'destination_id' ,create_using=nx.DiGraph())
+# dummy = False
+# print('''
+# -------------------------------------------------------------- 
+# Networks are made
+# --------------------------------------------------------------
+# ''')
 
-# family_network = nx.erdos_renyi_graph(1000, .005, seed=None)
-# household_network = nx.erdos_renyi_graph(1000, .002)
-# neighbour_network = nx.erdos_renyi_graph(1000, .01, seed=None, directed=True)
-# workschool_network = nx.erdos_renyi_graph(1000, .01, seed=None, directed=True)
-# dummy = True
-# all_nodes = range(1000)
+family_network = nx.erdos_renyi_graph(1000, .005, seed=None)
+household_network = nx.erdos_renyi_graph(1000, .002)
+neighbour_network = nx.erdos_renyi_graph(1000, .01, seed=None, directed=True)
+workschool_network = nx.erdos_renyi_graph(1000, .01, seed=None, directed=True)
+dummy = True
+all_nodes = range(1000)
 
 model = Amsterdam_social_network(
     agents= all_nodes,

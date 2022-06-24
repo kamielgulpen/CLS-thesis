@@ -1,0 +1,3 @@
+    client = Client()
+
+    print(client)

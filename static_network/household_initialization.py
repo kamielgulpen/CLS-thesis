@@ -1,5 +1,6 @@
 import pandas as pd
-from  hash_groups import hash_groups
+
+# from node_initialization import spatial, initialize_nodes
 import random
 import numpy as np
 import itertools
@@ -10,69 +11,34 @@ import itertools
 # Make that household complete by taking a person out of the population which resembles
 # Do this till all persons have a household
     
-def initialize_nodes(df, hash_dict):
-    '''
-    Initilizes all the nodes for the network
-    '''
-    
-    # Initialize list with nodes and nodes per group (example: Man,"[0,20)",1,Autochtoon)
-    all_nodes = []
-    group_nodes = {}
 
-    all_nodes_t = set()
-    df_sp = pd.read_csv('Data\Spatial_data\spatial_data_22gebieden.csv')
-    
-    group_list = df_sp.groupby(['geslacht','etngrp', 'oplniv']).size().reset_index().to_numpy()[:, [0, 1, 2]]
-    print(group_list)
-    group_dict = {tuple(group) : [] for group in group_list}
-    
-
-    id = 0
- 
-
-    # Loops through all lines in the tab_n file and get group properties of each line
-    for i in range(df.shape[0]):
-        group = df.iloc[i]
-
-        
-        age = group['lft']
-        etnc = group['etngrp']
-        gender = group['geslacht']
-        education = group['oplniv']
-        nodes = []
-        
-        hd = (f'{age}', f'{etnc}', f'{gender}', f'{education}')
-
-        
-        # Makes n (the size of the group) nodes of the group
-        for _ in range(int(group['n'])):
-
-            node = (id, hd)
-            nodes.append(node[0])
-            all_nodes.append(id)
-            group_dict[tuple([gender, etnc, education])].append(node)
-
-            id += 1
-
-            all_nodes_t.add(node)
-
-                
-        
-        # make a dictionary with as key the group properties and value a list of nodes of the group
-        group_nodes[hd] = nodes
-
-
-        
-    return all_nodes, group_nodes, group_dict, all_nodes_t
-
-
-def make_households(df, hh_df, group_nodes, prob, hh_prob, total_amount_agents, all_nodes_t):
+def make_households(hash_dict, all_nodes, group_nodes,area_dict, node_area):
 
     # Take a person
     # Check to which household it consists
     # Make the household complete
     # Add household to dictionary
     # * Do this till all agents are used
+
+
+
+    df_nodes = pd.read_csv('Data/tab_n(with oplniv).csv')
+
+    hh_df = pd.read_csv('Data/Household_data/DHS_household_.csv')
+    
+    hh_prob = pd.read_csv('Data/Household_data/ethnicity_probabilities.csv')
+
+
+    prob = df_nodes.groupby(by='etngrp').sum().reset_index()[['etngrp', 'n']]
+
+    # print(prob)
+    normalized_df=(prob['n'])/prob['n'].sum()
+
+    # print(normalized_df)
+    prob['probability'] = normalized_df
+
+    
+    total_amount_agents = int(df_nodes.n.sum())
 
     source_nodes = []
     destination_nodes = []
@@ -87,26 +53,31 @@ def make_households(df, hh_df, group_nodes, prob, hh_prob, total_amount_agents, 
 
     household_ids = []
     household_sizes = []
-
-    
-
             
-    print(total_amount_agents)
+    
     while len(added_nodes) != total_amount_agents:
-        hh = hh_df.sample(n=1)
+        x = 1
 
-        aantal = float(hh['aantalhh2'])
-
-    
-        if i < 20000 and aantal < 4:
-            
-            continue
-
-        elif i < 50000 and aantal < 3:
-            continue
-       
+        if i < 17401 :
+            x = 5
+        elif i < 17401 + 32883 :
+            x = 4
+        elif i < 17401 + 32883 + 43208 :
+            x = 3
+        elif i <= 17401 + 32883 + 43208 + 124787:
+            x = 2
+        else:
+            break
         
-        full_hh = hh_df[hh_df['nohhold'] == float(hh['nohhold'])]
+        
+        hh_df2  =hh_df[hh_df['aantalhh2'] == x]
+
+        if x == 5:
+            hh_df2  =hh_df[hh_df['aantalhh2'] > x - 1]  
+ 
+        hh = hh_df2.sample(n=1)
+
+        full_hh = hh_df2[hh_df2['nohhold'] == float(hh['nohhold'])]
 
         # print(full_hh)
         # First choose person based on age, education and gender
@@ -115,12 +86,15 @@ def make_households(df, hh_df, group_nodes, prob, hh_prob, total_amount_agents, 
 
         hh_list = []
         group_list = []
-        
+           
         for count, person in enumerate(full_hh.itertuples()):
+
+            # print(person)
 
 
             Index, _, nohhold, geslacht, aantalhh, aantalki, positie, aantalhh2, age, education, _ = person
 
+        
             education = int(education)
             if positie == 'child living at home' or count == 0:
                etnc = etnc
@@ -131,7 +105,11 @@ def make_households(df, hh_df, group_nodes, prob, hh_prob, total_amount_agents, 
                 
             
             # First person adult
-            group = group_nodes[(f'{age}', f'{etnc}', f'{geslacht}', f'{education}')]
+            group = group_nodes[hash_dict[f'{age}, {etnc}, {geslacht}, {education}']]
+
+            # Second person
+            if count > 0:
+                group  = area_dict[area][hash_dict[f'{age}, {etnc}, {geslacht}, {education}']]
 
             if len(group) == 0:
                 # hh_not_completed = True
@@ -139,17 +117,25 @@ def make_households(df, hh_df, group_nodes, prob, hh_prob, total_amount_agents, 
 
             agent = random.choices(group, k=1)[0]
 
+            if agent in hh_list:
+                break
+
             hh_list.append(agent)
           
             group_list.append(hash_dict[f'{age}, {etnc}, {geslacht}, {education}'])
 
+            if count == 0:
+                area = node_area[agent]
             
-           
-            group_nodes[(f'{age}', f'{etnc}', f'{geslacht}', f'{education}')].remove(agent)
-           
+        if len(hh_list) != x:
+            continue
+        
+        for x, y in zip(hh_list,group_list):
 
-      
-
+            # print(hh_list,group_list)
+            # print(x,y)
+            group_nodes[y].remove(x)
+            area_dict[area][y].remove(x)
 
         if i%1000 == 1:
             print('households = ', i, len(households))
@@ -163,14 +149,10 @@ def make_households(df, hh_df, group_nodes, prob, hh_prob, total_amount_agents, 
 
         if hh_list:
             
-           
-            # print(hh_list)
             households[i] = hh_list
             i+=1
 
-        
-
-       
+      
         household_sizes.append(len(hh_list))
         added_nodes.update(hh_list)
 
@@ -204,37 +186,17 @@ def make_households(df, hh_df, group_nodes, prob, hh_prob, total_amount_agents, 
 
 if __name__ == '__main__':
     
-    hash_dict, rehash_dict = hash_groups()
-
-    df_nodes = pd.read_csv('Data/tab_n(with oplniv).csv')
-
-    hh_df = pd.read_csv('Data/Household_data/DHS_household_.csv')
-
-    hh_etn_prob = pd.read_csv('Data/Household_data/ethnicity_probabilities.csv')
-    
-    all_nodes, group_nodes, group_dict, all_nodes_t = initialize_nodes(df_nodes, hash_dict)
-
-    # print(list(group_nodes.keys()))
-
-    prob = df_nodes.groupby(by='etngrp').sum().reset_index()[['etngrp', 'n']]
-
-    # print(prob)
-    normalized_df=(prob['n'])/prob['n'].sum()
-
-    # print(normalized_df)
-    prob['probability'] = normalized_df
-
-    
-    total_amount_agents = int(df_nodes.n.sum())
-
-    source_nodes, destination_nodes, source_group, destination_group , household_ids, household_sizes = make_households(df_nodes,hh_df, group_nodes, prob, hh_etn_prob, total_amount_agents, all_nodes_t)
-
-    d = {'source_id': list(source_nodes), 'destination_id':list(destination_nodes), 'source_group': list(source_group), 'destination_group': list(destination_group), 'household_id': list(household_ids)}
-
-    df_ = pd.DataFrame(d)
 
 
-    df2_ = pd.DataFrame({'size': household_sizes})
-    df_.to_csv(f'Data/NW_data2/hh_test2.csv')
 
-    df2_.to_csv('Data/NW_data2/hh_test2_sizes.csv')
+        source_nodes, destination_nodes, source_group, destination_group , household_ids, household_sizes = make_households(hh_df, group_nodes, prob, hh_etn_prob, total_amount_agents, hash_dict,area_dict, node_area)
+
+        d = {'source_id': list(source_nodes), 'destination_id':list(destination_nodes), 'source_group': list(source_group), 'destination_group': list(destination_group), 'household_id': list(household_ids)}
+
+        df_ = pd.DataFrame(d)
+
+
+        df2_ = pd.DataFrame({'size': household_sizes})
+        # df_.to_csv(f'Data/NW_data2/hh_test3.csv')
+
+        df_.to_csv(f'../Data/Experiments7/huishouden_experiment_{i}.csv')

@@ -174,107 +174,11 @@ while i < len(f_connections):
         n_stack = np.unique(stack, axis=0)
        
 
-
-        # print(mx_h[first_h: first_h + second ])
-        # print(mx_f[first_f: first_f + second])
-        
-        # print(mx_f[first_f: f_indices[i+1]].shape)
-
-        # print(np.unique(mx_f[first_f: f_indices[i+1]], axis=0).shape)
-    
-        # exit()
-        # print(mx_f[first_f: first_f + second])
-
-       
-
         same += second
   
     
         x = np.unique(mx_f[first_f: f_indices[i+1]], axis=0)
-        
-        # print(len(x), len(mx_f[first_f: f_indices[i+1]]))
-        # print(x)
-
-
-        
-        # print(mx_f_.shape)
-        # exit()
-
-  
-        # a = 0
-        # if o_stack.shape[0] != n_stack.shape[0]:
-        #         # if a == 1:
-        #         #         print(o_stack.shape[0], n_stack.shape[0])
-        #         difference = int(abs(o_stack.shape[0] - n_stack.shape[0]))
-
-
-               
-        #         number_of_rows = int(o_stack.shape[0]/2)
-
-        #         random_rows = o_stack[:number_of_rows]
-
-               
-             
-                
-                
-        #         # print(random_indices)
-               
-
-        #         copy = random_rows.copy()
-                
-               
-        #         copy[:, [-1, -2]] = copy[:, [-2, -1]]
-
-
-              
-        #         stack = np.vstack((random_rows, copy))
-                
-      
-         
-        #         # print(n_stack, stack)
-        #         n_stack2 = np.unique(np.vstack((n_stack, stack)), axis =0)
-           
-        #         a +=1
-
-        #         # n_stack = np.unique(n_stack, axis=0)
-
-        #         index = np.intersect1d(np.unique(n_stack2.flatten()), np.unique(n_stack.flatten()), assume_unique=True, return_indices=True)[1]
-        #         index2 = np.setdiff1d(range(np.unique(n_stack2.flatten()).shape[0]), index, assume_unique=True)
-
-        #         # print(n_stack[])
-                
-                
-
-           
-        #         # print(n_stack)
-        #         # print(n_stack2[index])
-                
-             
-        #         n_stack = np.vstack((n_stack, n_stack2[index2[:difference]]))
-
-
-       
-        # x = np.zeros((n_stack.shape[0], 1))
-
-        # y = np.zeros((n_stack.shape[0], 1))
-        # x.fill(src)
-        # y.fill(dest)
-
-        # n_stack = np.hstack((n_stack,x, y))
-        # print(new_matrix, n_stack)
-        # new_matrix = np.vstack((new_matrix, n_stack))
-
-
-                # print(mx_f[first_f: f_indices[i+1]])
-
- 
-        # mx_f[first_f: f_indices[index+1]] = x
-        
- 
-        
-        # print(np.unique(mx_f[first_f: f_indices[i+1]], axis=0).shape)
-        # print(mx_f[first_f: f_indices[index+1]])
-        # exit()
+    
         i += 1 
 
 print(mx_f.shape)

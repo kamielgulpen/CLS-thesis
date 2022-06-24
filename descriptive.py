@@ -6,6 +6,15 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
+import matplotlib as mpl
+import matplotlib.font_manager as fm#  Collect all the font names available to matplotlib
+font_names = [f.name for f in fm.fontManager.ttflist]
+import matplotlib.pyplot as plt
+plt.rcParams["font.family"] = "serif"
+# plt.rcParams["font.font"] = "Computer Modern Roman"
+plt.rcParams['font.size'] = 18
+plt.rcParams['axes.linewidth'] = 2
+
 # from inequalipy import *
 
 def get_total_edges(name):
@@ -207,7 +216,35 @@ def get_distributions_connections(category, name):
     name: 'etngrp','geslacht', 'oplniv', 'lft'
 
     '''
-    df = pd.read_csv(f"Data/tab_{name}.csv")    
+    df1 = pd.read_csv(f"Data/tab_familie.csv")    
+    df2 = pd.read_csv(f"Data/tab_buren.csv")    
+    df3 = pd.read_csv(f"Data/tab_werkschool.csv")    
+    df4 = pd.read_csv(f"Data/tab_huishouden.csv")    
+
+    df_n = pd.read_csv('Data/tab_n_(with oplniv).csv')
+
+    c = 'etngrp'
+    in_out = 'dst'
+
+    
+    # for i in np.sort(df[f'{c}_{in_out}'].unique()):
+    x2 = 0
+    for i in np.sort(df1[f'{c}_{in_out}'].unique()):
+        x = 0
+        print(i)
+        for df in [df1, df2, df3, df4]:
+            x += round(df[df[f'{c}_{in_out}'] == i].n.sum(),3)
+
+
+            x2 += round(df[df[f'{c}_{in_out}'] == i].n.sum(),3)
+        # print(round(df[df[f'{c}_{in_out}'] == i].n.sum()/df_n[df_n[c] == i].n.sum(),3))
+        print(round(x/100000, 3))
+
+        print(round(x2))
+        # print()
+    # print(df.n.sum()/df_n.n.sum())
+    exit()
+
     person_links = Person_links(df, None,None,None,None)
     # sns.barplot(data =person_links.links, x=category+'_src', y='fn', hue = category+'_dst', estimator=np.sum)
     category = 'lft'
@@ -293,7 +330,14 @@ def get_distributions_connections(category, name):
 
 def get_distributions_n():
 
-    df = pd.read_csv('tab_n.csv')
+    df = pd.read_csv('Data/tab_n_(with oplniv).csv')
+
+    c = 'lft'
+    for i in df[c].unique():
+        print(i)
+        print(df[df[c] == i].n.sum())
+
+    exit()
 
     for column in df.columns[0:-1]:
         new_df = pd.DataFrame()
@@ -310,6 +354,7 @@ def get_distributions_n():
 
         
         plt.savefig(f'Figures/tab_n/{column}.jpg')    # df.to_csv(f'Data/Descriptives/tab_{name}/{category}_ttest_homophily.csv')
+        plt.show()
         plt.close()
 
 def reject_outliers(data, m=2):
@@ -393,7 +438,7 @@ def normalized_links(df):
 
 if __name__ == '__main__':
     # Takes name of tab_ as input and reads csv
-    name = 'huishouden'
+    name = 'buren'
     group = 'etngrp'
     df = pd.read_csv(f"Data/tab_{name}.csv")
 
@@ -401,9 +446,9 @@ if __name__ == '__main__':
     # Ask for exporting descriptive statistics
     export_mean_columns = False
     export_count_values = False
-    homophily_statistis = True
+    homophily_statistis = False
     distributions_n = False
-    distribution_connections = False
+    distribution_connections = True
     total_distribution = False
 
 

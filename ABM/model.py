@@ -64,6 +64,7 @@ class Amsterdam_social_network(Model):
             }
 
         agent_reporters={
+            "id": lambda a: a.unique_id,
             "age": lambda a: a.age,
             "age_group": lambda a: a.age_group,
             "education": lambda a: a.education,
@@ -120,10 +121,10 @@ class Amsterdam_social_network(Model):
         self.dc.collect(self)
         self.deaths = 0
         self.births = 0
-        
-        # self.get_group_distribution()
+        self.adf = self.dc.get_agent_vars_dataframe().to_numpy()
+
         self.schedule.step()
-        
+         
         self.iteration += 1
     
 
@@ -274,54 +275,6 @@ class Amsterdam_social_network(Model):
 
         return distances
 
-    def get_distance(self, coordinates_agent_1, coordinates_agent_2, weights = False, distance_type='Euclidian'):
-        '''
-        This method calculates the distance in homophily between two agents
-
-        :param coordinates of first agent: coordinates_agent_1
-        :type list
-        :param coordinates of second agent: coordinates_agent_2
-        :type list
-        :param type of distance: distance_type
-        :type str
-
-        :returns: float or list -- distance between two nodes
-        '''
-        
-        # Create two numpy arrays from the coordinates
-        # a and b reprecent a list of the coordiantes of two agents
-
-        if distance_type == 'Manhattan':
-            distance = [0]*4
-
-            
-            distance[0] = np.linalg.norm(self.coordinates_dict[coordinates_agent_1][0]-self.coordinates_dict[coordinates_agent_2][0])
-            distance[1] = np.linalg.norm(self.coordinates_dict[coordinates_agent_1][1]-self.coordinates_dict[coordinates_agent_2][1])
-            distance[2] = np.linalg.norm(self.coordinates_dict[coordinates_agent_1][2]-self.coordinates_dict[coordinates_agent_2][2])
-            distance[3] = round(np.linalg.norm(self.coordinates_dict[coordinates_agent_1][3:]-self.coordinates_dict[coordinates_agent_2][3:]),0)
-            
-
-        elif distance_type == 'Euclidian':
-            # Get euclidean distance  
-            # return distance.cdist([coordinates_agent_1], [coordinates_agent_2], 'euclidean')
-            weights = True
-            if not weights:
-                distance = np.linalg.norm(self.coordinates_dict[coordinates_agent_1]-self.coordinates_dict[coordinates_agent_2])
-            else:
-                distance = [0]*4
-
-                
-                distance[0] = np.linalg.norm(self.coordinates_dict[coordinates_agent_1][0]-self.coordinates_dict[coordinates_agent_2][0])
-                distance[1] = np.linalg.norm(self.coordinates_dict[coordinates_agent_1][1]-self.coordinates_dict[coordinates_agent_2][1])
-                distance[2] = np.linalg.norm(self.coordinates_dict[coordinates_agent_1][2]-self.coordinates_dict[coordinates_agent_2][2])
-                distance[3] = np.linalg.norm(self.coordinates_dict[coordinates_agent_1][3:]-self.coordinates_dict[coordinates_agent_2][3:])
-                
-
-        else:
-            ValueError("distance_type has to be Manhattan or Euclidean")
-            
-
-        return distance
 
     def get_connection_probability(self,  d_ij, layer, weights = False):
         '''

@@ -93,11 +93,14 @@ class Citizen(Agent):
             self.deceased = True
             # print(self.age)
             # print(self.unique_id)
-          
-            self.model.family_network.remove_node(self.unique_id)
-            self.model.household_network.remove_node(self.unique_id)
-            self.model.workschool_network.remove_node(self.unique_id)
-            self.model.neighbour_network.remove_node(self.unique_id)
+            if self.unique_id in self.model.family_network:
+                self.model.family_network.remove_node(self.unique_id)
+            if self.unique_id in self.model.household_network:
+                self.model.household_network.remove_node(self.unique_id)
+            if self.unique_id in self.model.workschool_network:
+                self.model.workschool_network.remove_node(self.unique_id)
+            if self.unique_id in self.model.neighbour_network:
+                self.model.neighbour_network.remove_node(self.unique_id)
 
             self.model.schedule.remove(self)
 
@@ -201,8 +204,21 @@ class Citizen(Agent):
                 
            
              
+        
+            # for i in range(2400):
+            #     group = self.model.adf[self.model.adf[:,-1] == i]
+            #     p = self.model.layer_probability_dict[layer][self.group_id,i]
+            #     uniform =  np.random.rand(len(group))
+            #     for count, j in enumerate(self.model.groups[i]):
+                    
+            #         if p > uniform[count]:
                 
+            #             self.model.add_to_network(self, j.unique_id, layer)
 
+            #             self.model.remove_from_network(self, '', layer)
+                
+           
+             
 
                
 

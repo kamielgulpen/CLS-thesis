@@ -1,4 +1,5 @@
 from pyclbr import Class
+from winreg import ConnectRegistry
 from networkx.algorithms.centrality import group
 
 from descriptive import Person_links
@@ -14,19 +15,81 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import time
 
-
-
-def initialize_edges_links(df_edges,all_nodes, layer ,group_nodes, hash_dict, area_dict,node_area, id_source = None, id_destination = None, source = None, destination = None, barabasi = False, percentage=False, reciprocity=0, spatial = False):     
+def initialize_edges_links(df_edges,all_nodes, layer ,group_nodes, nodes_group, hash_dict, area_dict,node_area, work_group_dict, person_work_dict, area_name, fraction=False, reciprocity=0, transitivity = 1 ,spatial = False, workplaces = False, i = 1, person_degree_count = 0):     
     '''
     Initializes the links based on the links per group instead of the probability
     '''   
 
+    # df_edges = df_edges[df_edges['']]
+    group_connection = {}
+    overig = [0, 1, 2, 18, 19, 20, 33, 34, 35, 36, 37, 38, 42, 43, 44, 45, 46, 47, 51, 52, 53, 57, 58,
+    59,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    99,
+    100,
+    101,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    132,
+    133,
+    134,
+    144,
+    145,
+    146,
+    180,
+    181,
+    182]
+    
+    area_name_dict = {'22gebieden': 21, 'wijken': 98, 'buurten': 480}
 
+    n_areas = area_name_dict[area_name]
+
+    # if reciprocity != 1:
+    #     reciprocity += reciprocity * 0.1 
+
+    c = 0
+    barabasi_dict = {}
+
+    done_connections = set()
+    for workplace in range(max(work_group_dict.keys()) + 1):
+
+        barabasi_dict[workplace]  = {}
+        for group in range(240):
+            barabasi_dict[workplace][group] = []
+    
+
+
+    for workplace in range(max(work_group_dict.keys()) + 1):
+        for group in range(240):
+
+            if work_group_dict[workplace][group]:
+           
+                chosen_ones = random.sample(work_group_dict[workplace][group], k=(math.ceil(len(work_group_dict[workplace][group])*(fraction))))
+       
+                barabasi_dict[workplace][group].extend(chosen_ones)
+    
+
+   
     # Initialize all nodes with own link dictionary
     link_dictionary = {}
 
+    all_nodes2 = []
     for node in all_nodes:
         link_dictionary[node] = set()
+
+        # print(nodes_group[node])
+        if nodes_group[node] in overig:
+            continue
+        all_nodes2.append(node)
       
     
 
@@ -34,8 +97,15 @@ def initialize_edges_links(df_edges,all_nodes, layer ,group_nodes, hash_dict, ar
     initial_list = []
 
     symetry_dict = {}
+    max_dict = {}
 
+    df_edges = pd.concat([df_edges]*10, ignore_index=True)
 
+    df_edges.n = df_edges.n/10
+
+    print(df_edges.n)
+
+    # df_edges = df_edges.sample(frac=1).reset_index(drop=True)
     for row in df_edges.iterrows():
 
 
@@ -46,54 +116,92 @@ def initialize_edges_links(df_edges,all_nodes, layer ,group_nodes, hash_dict, ar
 
         initial_list.append(
             (
-            dst,
             src,
+            dst,
             int(row['n'])
             )
             )
 
 
+        max_dict[(src,dst)] = int(row['n'])*10
     
         symetry_dict[(src,dst)] = 0
     initial_list = np.array(initial_list)
 
-        
-    # If layer is huishouden or familie set symetric to True
-    if layer == 'huishouden' or layer == 'familie':
-        reciprocity = 1
-
     
-    # Initializes the source and destinations lists if not multiprocessed
-    if source == None and destination == None:
-        source = []
-        destination = []
-        id_source = []
-        id_destination = []
+    source = []
+    destination = []
+    id_source = []
+    id_destination = []
+
+    edges_layd = 0
+
+    if layer == 'familie' and spatial:
+
+        houshold_df = pd.read_csv(f"./Data/Experiments/Experiments7/huishouden_experiment_0.csv")
+        houshold_df =  houshold_df[(~houshold_df['source_group'].isin(overig) ) & (~houshold_df['destination_group'].isin(overig))]
+      
+        x = random.sample(list(houshold_df.household_id.unique()), k =100000)
+
+        houshold_df = houshold_df[houshold_df['household_id'].isin(x)]
+
+        for row in houshold_df.itertuples():
+         
+            _,_,source_id, destination_id, source_group, destination_group, _ = row
+
+            if (source_group,destination_group)  in symetry_dict and symetry_dict[(destination_group, source_group)] < max_dict[(destination_group, source_group)] and symetry_dict[(source_group,destination_group)] < max_dict[(source_group,destination_group)] :
+                source.append(source_group)
+                destination.append(destination_group)
+                id_source.append(source_id)
+                id_destination.append(destination_id)
+
+                link_dictionary[source_id].add(destination_id)
+
+                symetry_dict[(source_group,destination_group)] += 1
+
+                
+                edges_layd +=1
+
+
 
     total_edges = sum(df_edges['n'])
 
-    edges_layd = 0
-    len(initial_list)
 
     
-  
+    tot_connections = 0
     # Loops through all connections (generated by the initialize node function) and makes links
     for row in initial_list:
 
+       
+        # print(row)
         # Identifies source and destination group
         src_group = row[0]
         dst_group = row[1]
         connections = row[2]
+        
 
- 
+         
+        group_connection[(src_group,dst_group)] = tot_connections
 
-        # If te data is symetric (familie, household), initiate a dictionary for the destination group
+        tot_connections += connections
+        if src_group in overig or dst_group in overig:
+            continue
+        
 
         
-        if reciprocity and (src_group, dst_group) in symetry_dict:
+        # print(group_connection)
+        i = 0    
+        # If te data is symetric (familie, household), initiate a dictionary for the destination group
+        
+        if (reciprocity or transitivity) and (src_group, dst_group) in symetry_dict:
     
-            connections = connections - symetry_dict[(src_group, dst_group)]
+            i = symetry_dict[(src_group, dst_group)] % (max_dict[(src_group, dst_group)]/10)
+            c += symetry_dict[(src_group, dst_group)]
+            
+            if symetry_dict[(src_group, dst_group)] >= max_dict[(src_group, dst_group)]:
+                i = connections
 
+         
         # print(connections)
         # If there are no connections between the source group and the destination group we continue
         if connections == 0:
@@ -105,91 +213,149 @@ def initialize_edges_links(df_edges,all_nodes, layer ,group_nodes, hash_dict, ar
 
             
         # If Barabasi parameter is on take a sample to put in the initial bin (1 percent is standard)
-
-        if barabasi: 
-            
-            dst_nodes_bin = random.sample(dst_nodes, k=(math.ceil(len(dst_nodes)*(percentage/100))))
+        # ! Denk aan Barabasi in een school of op werk
         
-        i = 0
+        if fraction: 
+
+            
+            
+            dst_nodes_bin = random.sample(dst_nodes, k=(math.ceil(len(dst_nodes)*fraction)))
+            # print(len(dst_nodes_bin))
+    
+
+        
+        # print(connections)
 
         while i < connections:
-
-            if edges_layd % 100000 == 1:
+           
+            if edges_layd % 100000 == 0:
                 # print(symetry_dict)
+                # pass
                 print(edges_layd/total_edges)
-                print(edges_layd)
-    
-                
-            
+                print(edges_layd, len(source))
+
+            area_r = 0
+            c = 0
             while True:
                 
+                c+=1
                 # Take random source node and destination node based on the groups
-                if len(src_nodes) > 0 and len(dst_nodes) > 0:
+            
+                
+                src_node = random.choices(src_nodes)[0]
+                dst_node = random.choices(dst_nodes)[0]
+                
+        
+                # CHECK IN WHICH AREA HE IS FROM ==> MAKE DICTIONARY WHERE NODE IS KEY AND AREA IS VALUE
+                # CHOOSE A RANDOM OTHE NODE FROM THAT AREA WITH GROUP SPECIFICS ==> MAKE DICTIONARY WHERE AREA AND GROUP IS KEY AND LIST OF NODES IS VALUE
+                if layer == 'buren' and spatial:
                     
-                    src_node = random.choices(src_nodes)[0]
-                    dst_node = random.choices(dst_nodes)[0]
+
+                    # Get area of source group
+                    area = node_area[src_node]
                     
-                    
-                    # CHECK IN WHICH AREA HE IS FROM ==> MAKE DICTIONARY WHERE NODE IS KEY AND AREA IS VALUE
-                    # CHOOSE A RANDOM OTHE NODE FROM THAT AREA WITH GROUP SPECIFICS ==> MAKE DICTIONARY WHERE AREA AND GROUP IS KEY AND LIST OF NODES IS VALUE
-                    if layer == 'buren' and spatial:
+                    if np.random.uniform() < 0.01:
+
+                        if np.random.uniform()<0.5:
+                            area += 1
+                        else :
+                            area -= 1
+                            
+                        area %= n_areas
+
+
+        
+                    # if area_r < 5:
+                    #     area += area_r
+                    area += area_r
+                    area %= n_areas
+
+                    dst_area_nodes = area_dict[area][dst_group]
+                    if len(dst_area_nodes)> 0:
+        
                         
-                        
-                        # Get area of source group
-                        area = node_area[src_node]
-
-                        if np.random.uniform() < 0.01:
-
-                            if np.random.uniform()<0.5:
-                                area += 1
-                            else :
-                                area -= 1
-                                
-                            area %= 99
-
-                        # Get nodes based on area source group and destination group
                         dst_area_nodes = area_dict[area][dst_group]
+                        area_r += 1
+                        dst_node = random.choices(dst_area_nodes)[0]
 
-                        if len(dst_area_nodes) > 0:
-                            dst_node = random.choices(dst_area_nodes)[0]
-                        else:
-                            dst_node = random.choices(dst_nodes)[0]
-                    # Take random node from the bin
-                    if barabasi: dst_node = random.choices(dst_nodes_bin)[0]
-                   
-             
-                else:
-                   
-                    break
+            
+                        # area_r += 1
+                        # if np.random.uniform()<0.5:
+                        #     area += np.random.randint(1,6)
+                        # else :
+                        #     area -= np.random.randint(1,6)
+                        
+                    else:
+                        # dst_node = random.choices(dst_nodes)[0]
+
+                        # if np.random.uniform()<0.5:
+                        #     area += np.random.randint(1,6)
+                        # else :
+                        #     area -= np.random.randint(1,6)
+                        area_r +=1
+                        continue
+                        
+                    
+                    # # Get nodes based on area source group and destination group
+                    # dst_area_nodes = area_dict[area][dst_group]
+                    # dst_node = random.choices(dst_area_nodes)[0]
+
+                    # if area_r >= 5:
+                    #     # print('hoezee')
+                    #     dst_node = random.choices(dst_nodes)[0]
+                
+                
+
+
+                # if person_degree_count[dst_node] > 200 or person_degree_count[src_node] > 200:
+                    
+                #     continue
+                    
+
+                #! We can also do this based on area code, for instance use for this 22 gebieden, iig voor school kids kan dit interresant zijn
+
+                elif layer == 'werkschool' and workplaces == True:
+                    workplace = person_work_dict[src_node]
+                    # print(len(dst_area_nodes))
+                    dst_workplace_nodes = work_group_dict[workplace][dst_group]
+                
+
+                    if len(dst_workplace_nodes) > 20:
+                        dst_node = random.choices(dst_workplace_nodes)[0]
+                    else:
+                        dst_node = random.choices(dst_nodes)[0]
+
+                # if not workplaces and not fraction:
+                #     pass
+                # Take random node from the bin
+                if fraction and not workplaces: 
+                    dst_node = random.choices(dst_nodes_bin)[0]
+                    # print('hallo')
+
+                elif fraction and workplaces:
+                        
+                    if barabasi_dict[person_work_dict[src_node]][dst_group] and len(dst_workplace_nodes) > 20:
+                        dst_node = random.choices(barabasi_dict[person_work_dict[src_node]][dst_group])[0]
+                    else:
+                        dst_node = dst_node = random.choices(dst_nodes)[0]
            
 
                 # Checks if the source and destination node are not the same and checks if they aren't already linked
                 if dst_node != src_node and dst_node not in link_dictionary[src_node]:
                     
                     # # If Barabasi append a random node to the bin
-                    if barabasi:
+                    if fraction and not workplaces:
                         dst_nodes_bin.append(random.choices(dst_nodes)[0])
                
                         # Add the chosen node to the bin so the chosen node gets a higher weight 
-                        if np.random.uniform() < barabasi : dst_nodes_bin.append(dst_node)
+                        if np.random.uniform() > fraction : dst_nodes_bin.append(dst_node)
 
-                        
+                    elif fraction and workplaces:     
+                        if work_group_dict[person_work_dict[src_node]][dst_group]:
 
-                    # Appends both nodes to lists
-                    if reciprocity > np.random.uniform() and src_node not in link_dictionary[dst_node] and (src_group, dst_group) in symetry_dict:
-
-                       
-                        source.append(dst_group)
-                        destination.append(src_group)
-                        link_dictionary[dst_node].add(src_node)
-                    
-                        id_source.append(dst_node)
-                        id_destination.append(src_node)
-                        
-                        symetry_dict[(dst_group, src_group)] += 1
-                    
-                        if dst_nodes == src_nodes:
-                            i += 1
+                            r_node = random.choices(work_group_dict[person_work_dict[src_node]][dst_group])[0]
+                            barabasi_dict[person_work_dict[src_node]][dst_group].append(r_node)
+                            if np.random.uniform() > fraction: barabasi_dict[person_work_dict[src_node]][dst_group].append(dst_node)
 
                     source.append(src_group)
                     destination.append(dst_group)
@@ -198,13 +364,120 @@ def initialize_edges_links(df_edges,all_nodes, layer ,group_nodes, hash_dict, ar
                     id_destination.append(dst_node)
 
                     link_dictionary[src_node].add(dst_node)
+                    person_degree_count[dst_node] += 1
+
+                    symetry_dict[(src_group, dst_group)] += 1
+                    edges_layd += 1
+                    i += 1
+
+
+                    # Appends both nodes to lists
+                    if reciprocity > np.random.uniform() and \
+                        src_node not in link_dictionary[dst_node] and \
+                            (dst_group, src_group) in symetry_dict and \
+                                symetry_dict[(dst_group, src_group)] < max_dict[(dst_group, src_group)]:
+
+                        if (reciprocity != 1 and (dst_group, src_group) not in done_connections) or reciprocity == 1: #and \
+                                    
+                            
+                            source.append(dst_group)
+                            destination.append(src_group)
+                            link_dictionary[dst_node].add(src_node)
+                        
+                            id_source.append(dst_node)
+                            id_destination.append(src_node)
+                            
+                            symetry_dict[(dst_group, src_group)] += 1
+                    
+                            if dst_nodes == src_nodes:
+                                i += 1
+                            edges_layd += 1
+
+                            person_degree_count[src_node] += 1
+
+                
+                    if len(link_dictionary[dst_node]) > 0:
+                    
+                        
+                        # Look at the friends of the source node
+                        friends_dst = link_dictionary[dst_node]
+
+                        # Source node is the initial source node
+                        src_node_t = src_node
+
+                        for dst_node_t in friends_dst:
+
+                            if transitivity < np.random.uniform():
+                                continue
+                            # New destination node is a random friend of the original destination node
+                            # dst_node_t =  random.choice(list(friends_dst))
+                            
+                            # Look at the groups of the nodes
+                            src_group_t = nodes_group[src_node_t]
+                            dst_group_t = nodes_group[dst_node_t]
+                                    
+
+                            # Check if new destination node isn't already a friend
+                            # Check if the node pair is inside the symetry dict, which means that bot groups have connections
+                            # Check if the amount of connections between the two is not already maximal
+
+                            if  dst_node_t not in link_dictionary[src_node_t] and \
+                                (src_group_t, dst_group_t) in symetry_dict and \
+                                    symetry_dict[(src_group_t, dst_group_t)] < max_dict[(src_group_t, dst_group_t)]:
+
+                        
+                                if dst_group_t == dst_group:
+                                    i+=1
+                                
+                                symetry_dict[(src_group_t, dst_group_t)] += 1
+                                
+                    
+                                edges_layd += 1
+
+        
+                                source.append(src_group_t)
+                                destination.append(dst_group_t)
+                                link_dictionary[src_node_t].add(dst_node_t)
+
+
+
+                                id_source.append(src_node_t)
+                                id_destination.append(dst_node_t)
+                                
+                                
+
+                                # print(symetry_dict[(src_group_t, dst_group_t)])
+
+                        
+
+                                if reciprocity > np.random.uniform() and \
+                                src_node_t not in link_dictionary[dst_node_t] and \
+                                    (dst_group_t, src_group_t) in symetry_dict and \
+                                        symetry_dict[(dst_group_t, src_group_t)] < max_dict[(dst_group_t, src_group_t)]:
+ 
+                                    source.append(dst_group_t)
+                                    destination.append(src_group_t)
+                                    link_dictionary[dst_node_t].add(src_node_t)
+                                
+                                    id_source.append(dst_node_t)
+                                    id_destination.append(src_node_t)
+                                    
+                                    symetry_dict[(dst_group_t, src_group_t)] += 1
+                            
+                                    if (dst_group_t == dst_group) and (dst_group_t == src_group_t):
+                                        i += 1
+                                    edges_layd += 1
+
+                                    person_degree_count[src_node_t] += 1
+
 
                     break
-                
-            edges_layd += 1
-            i += 1
+            done_connections.add((src_group, dst_group))
 
-    print(edges_layd)
+
+            
+
+    print(edges_layd, len(source))
    
     return source, destination, id_source, id_destination
 

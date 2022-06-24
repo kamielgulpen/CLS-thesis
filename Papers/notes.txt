@@ -1,0 +1,40 @@
+- Data engineer is een zekere mogelijkheid
+
+- 
+
+
+
+
+Meeting
+
+- talk about what we discussed today
+- Ask question about homophily
+
+
+papers:
+https://www.sciencedirect.com/science/article/pii/S1364815218303220
+https://www.sciencedirect.com/science/article/pii/S1364815215000237
+https://sites.cs.ucsb.edu/~ravenben/publications/pdf/interaction-eurosys09.pdf
+
+Network databases:
+https://icon.colorado.edu/#!/networks
+https://snap.stanford.edu/data/
+https://networkrepository.com/soc.php
+https://figshare.com/search?q=%3Akeyword%3A%20%22interaction%20data%22&itemTypes=3
+http://multilayer.it.uu.se/datasets.html
+
+
+first motivate homophily ==>birds of a feather
+
+in which layers is this meaningfull
+
+SDA model ==> SDA
+
+Fit model to data it does not fit.
+
+Introduce new term and tweek equation and heterophily vertellen
+
+Equation and then fit.
+
+Experiment for attributes. 
+
